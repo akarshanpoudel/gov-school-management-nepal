@@ -24,7 +24,7 @@ A government-grade, high-security School Management System tailored for public s
 
 ### 2. Installation
 ```bash
-git clone [https://github.com/your-username/gov-school-management-nepal.git](https://github.com/your-username/gov-school-management-nepal.git)
+git clone [https://github.com/akarshanpoudel/gov-school-management-nepal.git](https://github.com/akarshanpoudel/gov-school-management-nepal.git)
 cd gov-school-management-nepal
 
 # Environment Setup
