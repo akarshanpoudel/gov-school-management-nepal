@@ -2,5 +2,11 @@ asgiref==3.12.1
 Django==6.1
 django-environ==0.14.0
 django-simple-history==3.13.0
+et_xmlfile==2.0.0
+numpy==2.5.2
+openpyxl==3.1.5
+pandas==3.0.5
+python-dateutil==2.9.0.post0
+six==1.17.0
 sqlparse==0.5.5
 tzdata==2026.3
