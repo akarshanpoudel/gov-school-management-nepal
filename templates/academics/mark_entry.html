@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load academic_extras %}  <!-- <-- LOAD YOUR CUSTOM FILTER HERE -->
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- ... header content ... -->
+
+    <form method="POST" class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        {% csrf_token %}
+        <div class="overflow-x-auto max-h-[60vh]">
+            <table class="w-full text-left border-collapse">
+                <!-- ... table headers ... -->
+                <tbody class="divide-y divide-slate-200 text-sm">
+                    {% for student in students %}
+                        <!-- LOOK UP THE STUDENT'S MARK SAFELY USING YOUR NEW FILTER -->
+                        {% with m=existing_marks|get_item:student.id %}
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="p-3 font-mono text-xs text-slate-600">{{ student.username }}</td>
+                            <td class="p-3 font-medium text-slate-900">{{ student.get_full_name|default:student.username }}</td>
+                            
+                            <!-- Theory Input -->
+                            <td class="p-3">
+                                <input type="number" step="0.01" min="0" max="{{ subject.full_marks_theory }}" 
+                                       name="theory_{{ student.id }}" 
+                                       value="{{ m.theory_obtained|default:'0.00' }}"
+                                       class="w-full px-3 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm">
+                            </td>
+
+                            <!-- Practical Input -->
+                            <td class="p-3">
+                                <input type="number" step="0.01" min="0" max="{{ subject.full_marks_practical }}" 
+                                       name="practical_{{ student.id }}" 
+                                       value="{{ m.practical_obtained|default:'0.00' }}"
+                                       class="w-full px-3 py-1.5 border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm">
+                            </td>
+
+                            <!-- Total Display -->
+                            <td class="p-3 font-semibold text-slate-800">
+                                {{ m.total_marks|default:"0.00" }}
+                            </td>
+
+                            <!-- Status Badge -->
+                            <td class="p-3">
+                                {% if m %}
+                                    {% if m.is_ng %}
+                                        <span class="px-2 py-1 bg-red-100 text-red-700 font-bold text-xs rounded">NG (GP: 0.0)</span>
+                                    {% else %}
+                                        <span class="px-2 py-1 bg-emerald-100 text-emerald-700 font-semibold text-xs rounded">Pass (GP: {{ m.grade_point }})</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-xs text-slate-400">Not Entered</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endwith %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-md font-medium text-sm shadow transition">
+                Save Marks & Calculate Grades
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
