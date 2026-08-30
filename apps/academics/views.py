@@ -1,49 +1,34 @@
-import pandas as pd
-from django.http import HttpResponse
+import openpyxl
 from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import Exam, Subject, Mark
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 from apps.users.models import User
-
-def is_teacher_or_admin(user):
-    return user.is_authenticated and user.role in [User.Role.ADMIN, User.Role.TEACHER]
-
-def is_admin_or_staff(user):
-    return user.is_authenticated and user.role in [User.Role.ADMIN, User.Role.STAFF]
+from .models import Exam, Subject, Mark
 
 @login_required
-@user_passes_test(is_teacher_or_admin)
 def mark_entry_view(request, exam_id, subject_id):
     exam = get_object_or_404(Exam, id=exam_id)
     subject = get_object_or_404(Subject, id=subject_id)
-    
-    # Fetch all students
-    students = User.objects.filter(role=User.Role.STUDENT).order_by('username')
-    
+    students = User.objects.filter(role=User.Role.STUDENT)
+
     if request.method == 'POST':
         for student in students:
-            theory_key = f'theory_{student.id}'
-            practical_key = f'practical_{student.id}'
+            t_mark = request.POST.get(f"theory_{student.id}", 0)
+            p_mark = request.POST.get(f"practical_{student.id}", 0)
             
-            if theory_key in request.POST and practical_key in request.POST:
-                theory_val = request.POST.get(theory_key) or 0
-                practical_val = request.POST.get(practical_key) or 0
-                
-                # update_or_create ensures no duplicate records on re-submission
-                Mark.objects.update_or_create(
-                    student=student,
-                    exam=exam,
-                    subject=subject,
-                    defaults={
-                        'theory_obtained': theory_val,
-                        'practical_obtained': practical_val
-                    }
-                )
-        return redirect('academics:mark_entry', exam_id=exam.id, subject_id=subject.id)
+            Mark.objects.update_or_create(
+                student=student,
+                exam=exam,
+                subject=subject,
+                defaults={
+                    'theory_obtained': float(t_mark) if t_mark else 0.0,
+                    'practical_obtained': float(p_mark) if p_mark else 0.0,
+                }
+            )
+        return redirect('core:dashboard')
 
-    # PRE-FETCH TO AVOID N+1 QUERIES: Map student_id to their Mark object
     existing_marks = {
-        mark.student_id: mark for mark in Mark.objects.filter(exam=exam, subject=subject)
+        m.student_id: m for m in Mark.objects.filter(exam=exam, subject=subject)
     }
 
     context = {
@@ -55,47 +40,60 @@ def mark_entry_view(request, exam_id, subject_id):
     return render(request, 'academics/mark_entry.html', context)
 
 @login_required
-@user_passes_test(is_admin_or_staff)
 def export_iemis_excel(request):
-    """
-    Queries student demographic data and outputs a formatted Excel file 
-    matching CEHRD / IEMIS bulk upload column specifications.
-    """
-    students = User.objects.filter(role=User.Role.STUDENT).values(
-        'username', 
-        'first_name', 
-        'last_name', 
-        'citizenship_no', 
-        'phone_number',
-        'created_at'
-    )
-    
-    df = pd.DataFrame(list(students))
-    
-    if not df.empty:
-        if 'created_at' in df.columns:
-            df['created_at'] = df['created_at'].dt.strftime('%Y-%m-%d')
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "IEMIS Marks"
 
-        df.rename(columns={
-            'username': 'IEMIS Student ID / Roll',
-            'first_name': 'First Name',
-            'last_name': 'Last Name',
-            'citizenship_no': 'Citizenship / Birth Reg No.',
-            'phone_number': 'Guardian Contact',
-            'created_at': 'Registration Date (AD)'
-        }, inplace=True)
-    else:
-        df = pd.DataFrame(columns=[
-            'IEMIS Student ID / Roll', 'First Name', 'Last Name', 
-            'Citizenship / Birth Reg No.', 'Guardian Contact', 'Registration Date (AD)'
+    headers = ["Student ID", "Student Name", "Subject Code", "Theory Marks", "Practical Marks", "Total Marks"]
+    ws.append(headers)
+
+    marks = Mark.objects.select_related('student', 'subject').all()
+    for m in marks:
+        ws.append([
+            m.student.username,
+            m.student.get_full_name() or m.student.username,
+            m.subject.code,
+            float(m.theory_obtained),
+            float(m.practical_obtained),
+            float(m.total_marks),
         ])
 
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response['Content-Disposition'] = 'attachment; filename="CEHRD_IEMIS_Student_Export_2081.xlsx"'
-
-    with pd.ExcelWriter(response, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Student_Baseline_Data')
-
+    response['Content-Disposition'] = 'attachment; filename="IEMIS_Marks_Export.xlsx"'
+    wb.save(response)
     return response
+
+@login_required
+def student_report_card_view(request, student_id, exam_id):
+    student = get_object_or_404(User, id=student_id, role=User.Role.STUDENT)
+    exam = get_object_or_404(Exam, id=exam_id)
+    marks = Mark.objects.filter(student=student, exam=exam).select_related('subject')
+
+    total_credits = 0.0
+    weighted_gp_sum = 0.0
+    has_ng = False
+
+    for mark in marks:
+        credit = float(mark.subject.credit_hours)
+        gp = mark.grade_point
+        
+        total_credits += credit
+        weighted_gp_sum += (gp * credit)
+        
+        if mark.is_ng:
+            has_ng = True
+
+    final_gpa = 0.0 if (has_ng or total_credits == 0) else round(weighted_gp_sum / total_credits, 2)
+
+    context = {
+        'student': student,
+        'exam': exam,
+        'marks': marks,
+        'final_gpa': final_gpa,
+        'has_ng': has_ng,
+        'total_credits': total_credits,
+    }
+    return render(request, 'academics/report_card.html', context)
