@@ -1,5 +1,5 @@
 from django.contrib import admin
-from simple_history.admin import SimpleModelAdmin  # <-- IMPORT THIS
+from simple_history.admin import SimpleHistoryAdmin  # Fixed import name
 from .models import AcademicYear, ClassRoom, Subject, Exam, Mark
 
 admin.site.register(AcademicYear)
@@ -11,9 +11,8 @@ class SubjectAdmin(admin.ModelAdmin):
     list_display = ('name', 'code', 'credit_hours', 'full_marks_theory', 'full_marks_practical')
     search_fields = ('name', 'code')
 
-# CHANGE admin.ModelAdmin TO SimpleModelAdmin HERE
 @admin.register(Mark)
-class MarkAdmin(SimpleModelAdmin):
+class MarkAdmin(SimpleHistoryAdmin):  # Using SimpleHistoryAdmin
     list_display = ('student', 'exam', 'subject', 'theory_obtained', 'practical_obtained', 'get_total', 'get_grade_point', 'get_ng_status')
     list_filter = ('exam', 'subject')
     
