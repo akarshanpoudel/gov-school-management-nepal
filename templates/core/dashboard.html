@@ -1,15 +1,59 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-    <h2 class="text-2xl font-bold mb-2 text-slate-900">Academic Dashboard</h2>
-    <p class="mb-6 text-slate-600">Welcome back, <span class="font-semibold text-slate-800">{{ request.user.username }}</span>.</p>
-    
-    <div class="border-t border-slate-100 pt-4">
-        <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Quick Actions</h3>
-        <a href="{% url 'academics:export_iemis' %}" class="inline-block bg-slate-900 text-white px-5 py-2.5 rounded-md hover:bg-slate-800 text-sm font-medium transition shadow-sm">
-            Export IEMIS Excel (.xlsx)
-        </a>
+<div class="max-w-5xl mx-auto space-y-6">
+    <!-- Header Card -->
+    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-900">Academic Dashboard</h2>
+            <p class="text-slate-600 text-sm">Logged in as: <span class="font-semibold text-slate-800">{{ request.user.username }}</span></p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'academics:export_iemis' %}" class="bg-slate-900 text-white px-4 py-2 rounded-md hover:bg-slate-800 text-sm font-medium transition shadow-sm">
+                Export IEMIS Excel (.xlsx)
+            </a>
+            <a href="/admin/" class="bg-slate-100 text-slate-700 border border-slate-300 px-4 py-2 rounded-md hover:bg-slate-200 text-sm font-medium transition">
+                Django Admin
+            </a>
+        </div>
+    </div>
+
+    <!-- Student List Section -->
+    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+        <h3 class="text-lg font-bold text-slate-900 mb-4">Enrolled Students Directory</h3>
+        
+        <table class="w-full text-left border-collapse border border-slate-200 text-sm">
+            <thead class="bg-slate-50 text-slate-700 uppercase text-xs font-semibold">
+                <tr>
+                    <th class="border border-slate-200 p-3">ID</th>
+                    <th class="border border-slate-200 p-3">Student Roll / Username</th>
+                    <th class="border border-slate-200 p-3">Full Name</th>
+                    <th class="border border-slate-200 p-3 text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+                {% for student in students %}
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="border border-slate-200 p-3 font-mono text-slate-500">{{ student.id }}</td>
+                    <td class="border border-slate-200 p-3 font-medium text-slate-900">{{ student.username }}</td>
+                    <td class="border border-slate-200 p-3 text-slate-700">{{ student.get_full_name|default:"N/A" }}</td>
+                    <td class="border border-slate-200 p-3 text-center">
+                        {% if latest_exam %}
+                            <a href="{% url 'academics:report_card' student.id latest_exam.id %}" class="inline-block bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-medium transition">
+                                View Grade Sheet →
+                            </a>
+                        {% else %}
+                            <span class="text-xs text-slate-400">No Exams Available</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="p-6 text-center text-slate-500">No students found. Please seed student records first.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

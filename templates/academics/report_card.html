@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-sm border border-slate-200 print:shadow-none print:border-none print:p-0">
+    
+    <!-- Print Action Button -->
+    <div class="mb-6 flex justify-between items-center print:hidden">
+        <a href="{% url 'core:dashboard' %}" class="text-sm text-slate-600 hover:text-slate-900">← Back to Dashboard</a>
+        <button onclick="window.print()" class="bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-emerald-700 transition">
+            Print Grade Sheet / Export PDF
+        </button>
+    </div>
+
+    <!-- Official Header -->
+    <div class="text-center border-b border-slate-300 pb-6 mb-6">
+        <h1 class="text-2xl font-bold uppercase tracking-wide text-slate-900">Government Secondary School</h1>
+        <p class="text-sm text-slate-600">Ministry of Education, Science and Technology</p>
+        <p class="text-xs font-semibold uppercase text-slate-500 mt-1">Official Academic Grade Sheet</p>
+    </div>
+
+    <!-- Student Metadata -->
+    <div class="grid grid-cols-2 gap-4 text-sm mb-6 bg-slate-50 p-4 rounded border border-slate-200">
+        <div>
+            <p><span class="font-semibold text-slate-700">Student Name:</span> {{ student.get_full_name|default:student.username }}</p>
+            <p><span class="font-semibold text-slate-700">Roll / ID:</span> {{ student.username }}</p>
+        </div>
+        <div class="text-right">
+            <p><span class="font-semibold text-slate-700">Examination:</span> {{ exam.title }}</p>
+            <p><span class="font-semibold text-slate-700">Academic Year:</span> {{ exam.academic_year.title }}</p>
+        </div>
+    </div>
+
+    <!-- Marks Table -->
+    <table class="w-full text-left border-collapse border border-slate-300 text-sm mb-6">
+        <thead class="bg-slate-100 text-slate-800 uppercase text-xs">
+            <tr>
+                <th class="border border-slate-300 p-2.5">Subject</th>
+                <th class="border border-slate-300 p-2.5 text-center">Credit Hours</th>
+                <th class="border border-slate-300 p-2.5 text-center">Theory</th>
+                <th class="border border-slate-300 p-2.5 text-center">Practical</th>
+                <th class="border border-slate-300 p-2.5 text-center">Total</th>
+                <th class="border border-slate-300 p-2.5 text-center">Grade Point</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+            {% for m in marks %}
+            <tr>
+                <td class="border border-slate-300 p-2.5 font-medium">{{ m.subject.name }} ({{ m.subject.code }})</td>
+                <td class="border border-slate-300 p-2.5 text-center font-mono">{{ m.subject.credit_hours }}</td>
+                <td class="border border-slate-300 p-2.5 text-center font-mono">{{ m.theory_obtained }}</td>
+                <td class="border border-slate-300 p-2.5 text-center font-mono">{{ m.practical_obtained }}</td>
+                <td class="border border-slate-300 p-2.5 text-center font-mono font-semibold">{{ m.total_marks }}</td>
+                <td class="border border-slate-300 p-2.5 text-center font-mono">
+                    {% if m.is_ng %}
+                        <span class="text-red-600 font-bold">0.0 (NG)</span>
+                    {% else %}
+                        {{ m.grade_point }}
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="border border-slate-300 p-4 text-center text-slate-500">No marks recorded for this examination.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Final Results Summary -->
+    <div class="flex justify-between items-center p-4 bg-slate-900 text-white rounded-lg">
+        <div>
+            <p class="text-xs text-slate-400 uppercase tracking-wider">Total Evaluated Credits</p>
+            <p class="text-lg font-bold">{{ total_credits }} hrs</p>
+        </div>
+        <div class="text-right">
+            <p class="text-xs text-slate-400 uppercase tracking-wider">Cumulative GPA / Result Status</p>
+            {% if has_ng %}
+                <p class="text-xl font-bold text-red-400">NOT GRADED (NG)</p>
+            {% else %}
+                <p class="text-2xl font-extrabold text-emerald-400">{{ final_gpa }} / 4.00</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -12,6 +12,14 @@ class AcademicYear(models.Model):
 class ClassRoom(models.Model):
     name = models.CharField(max_length=50, help_text="e.g., Grade 10")
     section = models.CharField(max_length=10, blank=True, null=True)
+    class_teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='managed_classes',
+        limit_choices_to={'role': 'TEACHER'}
+    )
 
     def __str__(self):
         return f"{self.name} {self.section or ''}".strip()
@@ -46,7 +54,6 @@ class Mark(models.Model):
     theory_obtained = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     practical_obtained = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
 
-    # Historical tracking snapshot
     history = HistoricalRecords()
 
     class Meta:
@@ -83,3 +90,22 @@ class Mark(models.Model):
 
     def __str__(self):
         return f"{self.student.username} - {self.subject.name}: {self.total_marks}"
+
+class Attendance(models.Model):
+    class Status(models.TextChoices):
+        PRESENT = 'PRESENT', 'Present'
+        ABSENT = 'ABSENT', 'Absent'
+        LATE = 'LATE', 'Late'
+        EXCUSED = 'EXCUSED', 'Excused'
+
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='attendances')
+    classroom = models.ForeignKey(ClassRoom, on_delete=models.CASCADE, related_name='attendances')
+    date = models.DateField()
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PRESENT)
+    remarks = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        unique_together = ('student', 'date')
+
+    def __str__(self):
+        return f"{self.student.username} - {self.date}: {self.status}"
