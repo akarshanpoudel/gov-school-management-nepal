@@ -1,9 +1,11 @@
 import openpyxl
+from datetime import date
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Q
 from apps.users.models import User
-from .models import Exam, Subject, Mark
+from .models import Exam, Subject, Mark, ClassRoom, Attendance
 
 @login_required
 def mark_entry_view(request, exam_id, subject_id):
@@ -97,3 +99,67 @@ def student_report_card_view(request, student_id, exam_id):
         'total_credits': total_credits,
     }
     return render(request, 'academics/report_card.html', context)
+
+@login_required
+def attendance_entry_view(request, classroom_id):
+    classroom = get_object_or_404(ClassRoom, id=classroom_id)
+    students = User.objects.filter(classroom=classroom, role=User.Role.STUDENT)
+    selected_date_str = request.GET.get('date', str(date.today()))
+
+    if request.method == 'POST':
+        entry_date = request.POST.get('attendance_date', str(date.today()))
+        for student in students:
+            status = request.POST.get(f"status_{student.id}", Attendance.Status.PRESENT)
+            remarks = request.POST.get(f"remarks_{student.id}", "")
+            Attendance.objects.update_or_create(
+                student=student,
+                date=entry_date,
+                defaults={
+                    'classroom': classroom,
+                    'status': status,
+                    'remarks': remarks
+                }
+            )
+        return redirect('academics:attendance_report', classroom_id=classroom.id)
+
+    existing_attendance = {
+        a.student_id: a for a in Attendance.objects.filter(classroom=classroom, date=selected_date_str)
+    }
+
+    context = {
+        'classroom': classroom,
+        'students': students,
+        'selected_date': selected_date_str,
+        'existing_attendance': existing_attendance,
+        'statuses': Attendance.Status.choices,
+    }
+    return render(request, 'academics/attendance_entry.html', context)
+
+@login_required
+def attendance_report_view(request, classroom_id):
+    classroom = get_object_or_404(ClassRoom, id=classroom_id)
+    students = User.objects.filter(classroom=classroom, role=User.Role.STUDENT)
+
+    report_data = []
+    for student in students:
+        total_days = Attendance.objects.filter(student=student, classroom=classroom).count()
+        present_days = Attendance.objects.filter(student=student, classroom=classroom, status__in=[Attendance.Status.PRESENT, Attendance.Status.LATE]).count()
+        absent_days = Attendance.objects.filter(student=student, classroom=classroom, status=Attendance.Status.ABSENT).count()
+        
+        percentage = round((present_days / total_days) * 100, 1) if total_days > 0 else 100.0
+        is_low_attendance = percentage < 75.0
+
+        report_data.append({
+            'student': student,
+            'total_days': total_days,
+            'present_days': present_days,
+            'absent_days': absent_days,
+            'percentage': percentage,
+            'is_low_attendance': is_low_attendance,
+        })
+
+    context = {
+        'classroom': classroom,
+        'report_data': report_data,
+    }
+    return render(request, 'academics/attendance_report.html', context)
