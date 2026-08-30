@@ -7,4 +7,6 @@ urlpatterns = [
     path('marks/entry/<int:exam_id>/<int:subject_id>/', views.mark_entry_view, name='mark_entry'),
     path('export/iemis/', views.export_iemis_excel, name='export_iemis'),
     path('report-card/<int:student_id>/<int:exam_id>/', views.student_report_card_view, name='report_card'),
+    path('attendance/entry/<int:classroom_id>/', views.attendance_entry_view, name='attendance_entry'),
+    path('attendance/report/<int:classroom_id>/', views.attendance_report_view, name='attendance_report'),
 ]
