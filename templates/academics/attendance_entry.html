@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-xl font-bold text-slate-900">Daily Attendance Entry</h2>
+            <p class="text-sm text-slate-500">Class: {{ classroom.name }} {{ classroom.section|default:"" }}</p>
+        </div>
+        <a href="{% url 'academics:attendance_report' classroom.id %}" class="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 px-3 py-2 rounded font-semibold transition">
+            View Attendance Report →
+        </a>
+    </div>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-4 flex items-center gap-3">
+            <label class="text-sm font-semibold text-slate-700">Attendance Date:</label>
+            <input type="date" name="attendance_date" value="{{ selected_date }}" class="border border-slate-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900">
+        </div>
+
+        <table class="w-full text-left border-collapse border border-slate-200 text-sm mb-6">
+            <thead class="bg-slate-50 text-slate-700 uppercase text-xs font-semibold">
+                <tr>
+                    <th class="border border-slate-200 p-3">Student Roll</th>
+                    <th class="border border-slate-200 p-3">Name</th>
+                    <th class="border border-slate-200 p-3 text-center">Status</th>
+                    <th class="border border-slate-200 p-3">Remarks</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+                {% for student in students %}
+                {% with att=existing_attendance|get_item:student.id %}
+                <tr class="hover:bg-slate-50">
+                    <td class="border border-slate-200 p-3 font-mono text-slate-600">{{ student.username }}</td>
+                    <td class="border border-slate-200 p-3 font-medium text-slate-900">{{ student.get_full_name|default:student.username }}</td>
+                    <td class="border border-slate-200 p-3 text-center">
+                        <select name="status_{{ student.id }}" class="border border-slate-300 rounded px-2 py-1 text-xs font-semibold">
+                            <option value="PRESENT" {% if att and att.status == 'PRESENT' %}selected{% endif %}>Present</option>
+                            <option value="ABSENT" {% if att and att.status == 'ABSENT' %}selected{% endif %}>Absent</option>
+                            <option value="LATE" {% if att and att.status == 'LATE' %}selected{% endif %}>Late</option>
+                            <option value="EXCUSED" {% if att and att.status == 'EXCUSED' %}selected{% endif %}>Excused</option>
+                        </select>
+                    </td>
+                    <td class="border border-slate-200 p-3">
+                        <input type="text" name="remarks_{{ student.id }}" value="{{ att.remarks|default:'' }}" placeholder="Optional note" class="w-full border border-slate-300 rounded px-2 py-1 text-xs">
+                    </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="p-4 text-center text-slate-500">No students enrolled in this classroom.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded text-sm font-medium transition">
+            Save Attendance Record
+        </button>
+    </form>
+</div>
+{% endblock %}
