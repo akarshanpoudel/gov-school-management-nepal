@@ -3,19 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Government School Management System</title>
-    <!-- Tailwind CSS CDN -->
+    <title>{% block title %}Government School Management System{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
-    <nav class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shadow-md">
-        <h1 class="text-lg font-bold tracking-wide">Government School Management System</h1>
-        {% if user.is_authenticated %}
-            <span class="text-sm bg-slate-800 px-3 py-1 rounded">Logged in as: {{ user.username }}</span>
-        {% endif %}
+<body class="bg-slate-100 min-h-screen flex flex-col font-sans">
+
+    <!-- Top Navigation Bar -->
+    <nav class="bg-slate-900 text-white px-6 py-3.5 flex justify-between items-center shadow-md">
+        <!-- Clickable Brand Title -->
+        <a href="{% url 'core:dashboard' %}" class="text-base font-bold tracking-wide hover:text-slate-300 transition flex items-center gap-2">
+            <span>🏫</span> Government School Management System
+        </a>
+
+        <!-- Right Side Nav Items -->
+        <div class="flex items-center gap-6 text-xs">
+            <div class="flex items-center gap-4 border-r border-slate-700 pr-4">
+                <a href="{% url 'core:dashboard' %}" class="text-slate-300 hover:text-white transition font-medium">Dashboard</a>
+                <a href="{% url 'fees:dashboard' %}" class="text-slate-300 hover:text-white transition font-medium">Fee Engine</a>
+                <a href="{% url 'academics:export_iemis' %}" class="text-slate-300 hover:text-white transition font-medium">IEMIS</a>
+            </div>
+
+            {% if user.is_authenticated %}
+            <div class="text-slate-400">
+                Logged in as: <strong class="text-white">{{ user.username }}</strong>
+            </div>
+            {% endif %}
+        </div>
     </nav>
-    <main class="p-8">
+
+    <!-- Main Container -->
+    <main class="flex-1 p-6">
         {% block content %}{% endblock %}
     </main>
+
 </body>
 </html>
