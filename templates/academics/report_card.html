@@ -1,85 +1,180 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-sm border border-slate-200 print:shadow-none print:border-none print:p-0">
-    
-    <!-- Print Action Button -->
-    <div class="mb-6 flex justify-between items-center print:hidden">
-        <a href="{% url 'core:dashboard' %}" class="text-sm text-slate-600 hover:text-slate-900">← Back to Dashboard</a>
-        <button onclick="window.print()" class="bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-emerald-700 transition">
-            Print Grade Sheet / Export PDF
-        </button>
-    </div>
+<div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-sm border border-slate-200 print:border-none print:shadow-none print:p-0 font-sans text-slate-800">
 
-    <!-- Official Header -->
-    <div class="text-center border-b border-slate-300 pb-6 mb-6">
-        <h1 class="text-2xl font-bold uppercase tracking-wide text-slate-900">Government Secondary School</h1>
-        <p class="text-sm text-slate-600">Ministry of Education, Science and Technology</p>
-        <p class="text-xs font-semibold uppercase text-slate-500 mt-1">Official Academic Grade Sheet</p>
-    </div>
-
-    <!-- Student Metadata -->
-    <div class="grid grid-cols-2 gap-4 text-sm mb-6 bg-slate-50 p-4 rounded border border-slate-200">
+    <!-- Header Navigation & Action Buttons (Hidden during printing) -->
+    <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-200 print:hidden">
         <div>
-            <p><span class="font-semibold text-slate-700">Student Name:</span> {{ student.get_full_name|default:student.username }}</p>
-            <p><span class="font-semibold text-slate-700">Roll / ID:</span> {{ student.username }}</p>
+            <h2 class="text-xl font-bold text-slate-900">Student Grade Sheet</h2>
+            <p class="text-xs text-slate-500">Classroom: <span class="font-semibold text-slate-700">{{ student.classroom.name|default:"N/A" }}</span> | Exam: <span class="font-semibold text-slate-700">{{ exam.name }}</span></p>
         </div>
-        <div class="text-right">
-            <p><span class="font-semibold text-slate-700">Examination:</span> {{ exam.title }}</p>
-            <p><span class="font-semibold text-slate-700">Academic Year:</span> {{ exam.academic_year.title }}</p>
+        <div class="flex items-center gap-2">
+            <a href="{% url 'core:dashboard' %}" class="bg-slate-100 border border-slate-300 text-slate-700 hover:bg-slate-200 px-3 py-1.5 rounded text-xs font-semibold transition">
+                ← Dashboard
+            </a>
+            <button onclick="window.print()" class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-1.5 rounded text-xs font-semibold transition shadow-sm flex items-center gap-1.5">
+                🖨️ Print Marksheet
+            </button>
         </div>
     </div>
 
-    <!-- Marks Table -->
-    <table class="w-full text-left border-collapse border border-slate-300 text-sm mb-6">
-        <thead class="bg-slate-100 text-slate-800 uppercase text-xs">
-            <tr>
-                <th class="border border-slate-300 p-2.5">Subject</th>
-                <th class="border border-slate-300 p-2.5 text-center">Credit Hours</th>
-                <th class="border border-slate-300 p-2.5 text-center">Theory</th>
-                <th class="border border-slate-300 p-2.5 text-center">Practical</th>
-                <th class="border border-slate-300 p-2.5 text-center">Total</th>
-                <th class="border border-slate-300 p-2.5 text-center">Grade Point</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-200">
-            {% for m in marks %}
-            <tr>
-                <td class="border border-slate-300 p-2.5 font-medium">{{ m.subject.name }} ({{ m.subject.code }})</td>
-                <td class="border border-slate-300 p-2.5 text-center font-mono">{{ m.subject.credit_hours }}</td>
-                <td class="border border-slate-300 p-2.5 text-center font-mono">{{ m.theory_obtained }}</td>
-                <td class="border border-slate-300 p-2.5 text-center font-mono">{{ m.practical_obtained }}</td>
-                <td class="border border-slate-300 p-2.5 text-center font-mono font-semibold">{{ m.total_marks }}</td>
-                <td class="border border-slate-300 p-2.5 text-center font-mono">
-                    {% if m.is_ng %}
-                        <span class="text-red-600 font-bold">0.0 (NG)</span>
-                    {% else %}
-                        {{ m.grade_point }}
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6" class="border border-slate-300 p-4 text-center text-slate-500">No marks recorded for this examination.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <!-- Final Results Summary -->
-    <div class="flex justify-between items-center p-4 bg-slate-900 text-white rounded-lg">
-        <div>
-            <p class="text-xs text-slate-400 uppercase tracking-wider">Total Evaluated Credits</p>
-            <p class="text-lg font-bold">{{ total_credits }} hrs</p>
+    <!-- Official Government School Header -->
+    <div class="text-center mb-6 border-b-2 border-slate-900 pb-4">
+        <div class="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">Government of Nepal • Ministry of Education</div>
+        <h1 class="text-2xl font-black uppercase text-slate-900 tracking-wide">Shree Secondary School</h1>
+        <p class="text-xs text-slate-600 font-medium">Department of Examinations • Government School System</p>
+        <div class="mt-3 inline-block bg-slate-900 text-white text-xs uppercase tracking-widest px-4 py-1 rounded font-bold">
+            Grade Sheet / Marksheet
         </div>
-        <div class="text-right">
-            <p class="text-xs text-slate-400 uppercase tracking-wider">Cumulative GPA / Result Status</p>
-            {% if has_ng %}
-                <p class="text-xl font-bold text-red-400">NOT GRADED (NG)</p>
-            {% else %}
-                <p class="text-2xl font-extrabold text-emerald-400">{{ final_gpa }} / 4.00</p>
+        <p class="text-xs font-bold text-slate-700 mt-1.5">{{ exam.name }}</p>
+    </div>
+
+    <!-- Student Metadata Section -->
+    <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs bg-slate-50 p-4 rounded-md border border-slate-200 mb-6 print:bg-white print:border-slate-300">
+        <div><span class="text-slate-500 font-medium">Student Name:</span> <strong class="text-slate-900 uppercase ml-1">{{ student.get_full_name|default:student.username }}</strong></div>
+        <div><span class="text-slate-500 font-medium">Roll / Symbol No:</span> <strong class="text-slate-900 font-mono ml-1">{{ student.username }}</strong></div>
+        <div><span class="text-slate-500 font-medium">Class / Section:</span> <strong class="text-slate-900 ml-1">{{ student.classroom.name|default:"N/A" }}</strong></div>
+        <div><span class="text-slate-500 font-medium">Registration ID:</span> <strong class="text-slate-900 font-mono ml-1">IEMIS-{{ student.id }}</strong></div>
+    </div>
+
+    <!-- Marksheet Table -->
+    <div class="overflow-x-auto mb-6">
+        <table class="w-full text-left border-collapse border border-slate-300 text-xs">
+            <thead class="bg-slate-100 text-slate-800 uppercase font-semibold">
+                <tr>
+                    <th class="border border-slate-300 p-2.5 text-center w-10">SN</th>
+                    <th class="border border-slate-300 p-2.5">Subject</th>
+                    <th class="border border-slate-300 p-2.5 text-center w-24">Theory</th>
+                    <th class="border border-slate-300 p-2.5 text-center w-24">Practical</th>
+                    <th class="border border-slate-300 p-2.5 text-center w-24">Total Marks</th>
+                    <th class="border border-slate-300 p-2.5 text-center w-20">Grade</th>
+                    <th class="border border-slate-300 p-2.5 text-center w-24">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-300">
+                {% for mark in marks %}
+                <tr class="hover:bg-slate-50 transition print:hover:bg-transparent">
+                    <td class="border border-slate-300 p-2.5 text-center font-mono text-slate-500">{{ forloop.counter }}</td>
+                    <td class="border border-slate-300 p-2.5 font-semibold text-slate-900">{{ mark.subject.name }}</td>
+                    <td class="border border-slate-300 p-2.5 text-center font-mono">{{ mark.theory_marks }}</td>
+                    <td class="border border-slate-300 p-2.5 text-center font-mono">{{ mark.practical_marks }}</td>
+                    <td class="border border-slate-300 p-2.5 text-center font-mono font-bold text-slate-900">
+                        {{ mark.theory_marks|add:mark.practical_marks }}
+                    </td>
+                    <td class="border border-slate-300 p-2.5 text-center font-bold">
+                        {% with total=mark.theory_marks|add:mark.practical_marks %}
+                            {% if total >= 90 %}<span class="text-emerald-700">A+</span>
+                            {% elif total >= 80 %}<span class="text-emerald-600">A</span>
+                            {% elif total >= 70 %}<span class="text-blue-600">B+</span>
+                            {% elif total >= 60 %}<span class="text-blue-500">B</span>
+                            {% elif total >= 50 %}<span class="text-amber-600">C+</span>
+                            {% elif total >= 40 %}<span class="text-amber-700">C</span>
+                            {% else %}<span class="text-red-600">D</span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td class="border border-slate-300 p-2.5 text-center">
+                        {% with total=mark.theory_marks|add:mark.practical_marks %}
+                            {% if total >= 40 %}
+                                <span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold border border-emerald-200 print:border-none print:bg-transparent">PASS</span>
+                            {% else %}
+                                <span class="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded font-bold border border-red-200 print:border-none print:bg-transparent">FAIL</span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="border border-slate-300 p-4 text-center text-slate-500">No marks entries recorded for this examination.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if marks %}
+            <tfoot class="bg-slate-50 font-bold text-slate-900">
+                <tr>
+                    <td colspan="2" class="border border-slate-300 p-2.5 text-right uppercase">Grand Total</td>
+                    <td class="border border-slate-300 p-2.5 text-center font-mono">{{ total_theory }}</td>
+                    <td class="border border-slate-300 p-2.5 text-center font-mono">{{ total_practical }}</td>
+                    <td class="border border-slate-300 p-2.5 text-center font-mono text-blue-900 text-sm">{{ grand_total }}</td>
+                    <td colspan="2" class="border border-slate-300 p-2.5 text-center text-slate-700">
+                        RESULT: <span class="text-emerald-700 font-extrabold">PASSED</span>
+                    </td>
+                </tr>
+            </tfoot>
             {% endif %}
+        </table>
+    </div>
+
+    <!-- Grading Legend & Summary Box -->
+    <div class="grid grid-cols-3 gap-4 text-xs mb-10">
+        <!-- Grading System Reference -->
+        <div class="col-span-2 border border-slate-300 p-3 rounded bg-slate-50 print:bg-white">
+            <h4 class="font-bold text-slate-800 mb-1.5 uppercase text-[10px] tracking-wider">Government Grading Scale Reference</h4>
+            <div class="grid grid-cols-4 gap-1 text-[11px] text-slate-600">
+                <div><strong>A+</strong> : 90% - 100%</div>
+                <div><strong>A</strong> : 80% - 89%</div>
+                <div><strong>B+</strong> : 70% - 79%</div>
+                <div><strong>B</strong> : 60% - 69%</div>
+                <div><strong>C+</strong> : 50% - 59%</div>
+                <div><strong>C</strong> : 40% - 49%</div>
+                <div><strong>D</strong> : 35% - 39%</div>
+                <div><strong>NG</strong> : Below 35%</div>
+            </div>
+        </div>
+        <!-- Overall Marks Box -->
+        <div class="border border-slate-300 p-3 rounded bg-slate-50 print:bg-white flex flex-col justify-center items-center text-center">
+            <span class="text-slate-500 uppercase text-[10px] font-bold tracking-wider">Total Marks Secured</span>
+            <span class="text-2xl font-black text-slate-900 my-0.5">{{ grand_total }}</span>
+            <span class="text-[11px] text-slate-600 font-medium">Issue Date: {{ today|date:"M d, Y" }}</span>
         </div>
     </div>
+
+    <!-- Official Signatures & Stamp -->
+    <div class="pt-8 grid grid-cols-3 gap-6 text-center text-xs text-slate-700 font-medium">
+        <div>
+            <div class="h-12 flex items-end justify-center mb-1">
+                <span class="border-b border-dashed border-slate-400 w-3/4"></span>
+            </div>
+            <p class="font-bold text-slate-900">Class Teacher</p>
+        </div>
+        <div>
+            <div class="h-12 flex items-center justify-center mb-1">
+                <span class="text-[10px] uppercase font-bold text-slate-300 border border-dashed border-slate-300 rounded-full px-3 py-2">Official School Seal</span>
+            </div>
+            <p class="font-bold text-slate-900">Exam Controller</p>
+        </div>
+        <div>
+            <div class="h-12 flex items-end justify-center mb-1">
+                <span class="border-b border-dashed border-slate-400 w-3/4"></span>
+            </div>
+            <p class="font-bold text-slate-900">Headmaster / Principal</p>
+        </div>
+    </div>
+
 </div>
+
+<!-- Print Styles Override -->
+<style>
+@media print {
+    body {
+        background: #ffffff !important;
+    }
+    .print\:hidden {
+        display: none !important;
+    }
+    .print\:border-none {
+        border: none !important;
+    }
+    .print\:shadow-none {
+        box-shadow: none !important;
+    }
+    .print\:p-0 {
+        padding: 0 !important;
+    }
+    .print\:bg-white {
+        background-color: #ffffff !important;
+    }
+}
+</style>
 {% endblock %}

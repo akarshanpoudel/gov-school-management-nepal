@@ -1,64 +1,78 @@
 {% extends 'base.html' %}
 {% load academics_extras %}
 
+{% block title %}Take Attendance - {{ classroom.name }}{% endblock %}
+
 {% block content %}
 <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-200">
         <div>
-            <h2 class="text-xl font-bold text-slate-900">Daily Attendance Entry</h2>
-            <p class="text-sm text-slate-500">Class: {{ classroom.name }} {{ classroom.section|default:"" }}</p>
+            <h1 class="text-xl font-bold text-slate-900">Daily Attendance</h1>
+            <p class="text-sm text-slate-500 mt-1">
+                Classroom: <strong class="text-slate-800">{{ classroom.name }}</strong> | 
+                Date: <strong class="text-slate-800">{{ today|date:"F j, Y" }}</strong>
+            </p>
         </div>
-        <a href="{% url 'academics:attendance_report' classroom.id %}" class="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 px-3 py-2 rounded font-semibold transition">
-            View Attendance Report →
+        <a href="{% url 'core:dashboard' %}" class="bg-slate-100 border border-slate-300 text-slate-700 hover:bg-slate-200 px-3 py-1.5 rounded text-xs font-semibold transition">
+            ← Cancel
         </a>
     </div>
 
-    <form method="POST">
+    <form method="POST" class="space-y-6">
         {% csrf_token %}
-        <div class="mb-4 flex items-center gap-3">
-            <label class="text-sm font-semibold text-slate-700">Attendance Date:</label>
-            <input type="date" name="attendance_date" value="{{ selected_date }}" class="border border-slate-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900">
-        </div>
-
-        <table class="w-full text-left border-collapse border border-slate-200 text-sm mb-6">
-            <thead class="bg-slate-50 text-slate-700 uppercase text-xs font-semibold">
+        <table class="w-full text-left border-collapse border border-slate-200 text-sm">
+            <thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-xs">
                 <tr>
-                    <th class="border border-slate-200 p-3">Student Roll</th>
-                    <th class="border border-slate-200 p-3">Name</th>
+                    <th class="border border-slate-200 p-3 w-24">Roll No.</th>
+                    <th class="border border-slate-200 p-3">Student Name</th>
                     <th class="border border-slate-200 p-3 text-center">Status</th>
-                    <th class="border border-slate-200 p-3">Remarks</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-200">
                 {% for student in students %}
-                {% with att=existing_attendance|get_item:student.id %}
-                <tr class="hover:bg-slate-50">
-                    <td class="border border-slate-200 p-3 font-mono text-slate-600">{{ student.username }}</td>
-                    <td class="border border-slate-200 p-3 font-medium text-slate-900">{{ student.get_full_name|default:student.username }}</td>
-                    <td class="border border-slate-200 p-3 text-center">
-                        <select name="status_{{ student.id }}" class="border border-slate-300 rounded px-2 py-1 text-xs font-semibold">
-                            <option value="PRESENT" {% if att and att.status == 'PRESENT' %}selected{% endif %}>Present</option>
-                            <option value="ABSENT" {% if att and att.status == 'ABSENT' %}selected{% endif %}>Absent</option>
-                            <option value="LATE" {% if att and att.status == 'LATE' %}selected{% endif %}>Late</option>
-                            <option value="EXCUSED" {% if att and att.status == 'EXCUSED' %}selected{% endif %}>Excused</option>
-                        </select>
-                    </td>
+                {% with record=existing_attendance|get_item:student.id %}
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="border border-slate-200 p-3 font-mono font-bold">{{ student.username }}</td>
+                    <td class="border border-slate-200 p-3 font-medium">{{ student.get_full_name|default:student.username }}</td>
                     <td class="border border-slate-200 p-3">
-                        <input type="text" name="remarks_{{ student.id }}" value="{{ att.remarks|default:'' }}" placeholder="Optional note" class="w-full border border-slate-300 rounded px-2 py-1 text-xs">
+                        <div class="flex justify-center gap-4">
+                            <label class="flex items-center gap-1 cursor-pointer text-emerald-700 hover:text-emerald-800 font-medium">
+                                <input type="radio" name="status_{{ student.id }}" value="PRESENT" 
+                                    class="accent-emerald-600 w-4 h-4"
+                                    {% if not record or record.status == 'PRESENT' %}checked{% endif %}>
+                                Present
+                            </label>
+                            
+                            <label class="flex items-center gap-1 cursor-pointer text-red-600 hover:text-red-700 font-medium">
+                                <input type="radio" name="status_{{ student.id }}" value="ABSENT" 
+                                    class="accent-red-600 w-4 h-4"
+                                    {% if record and record.status == 'ABSENT' %}checked{% endif %}>
+                                Absent
+                            </label>
+
+                            <label class="flex items-center gap-1 cursor-pointer text-amber-600 hover:text-amber-700 font-medium">
+                                <input type="radio" name="status_{{ student.id }}" value="LATE" 
+                                    class="accent-amber-600 w-4 h-4"
+                                    {% if record and record.status == 'LATE' %}checked{% endif %}>
+                                Late
+                            </label>
+                        </div>
                     </td>
                 </tr>
                 {% endwith %}
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="p-4 text-center text-slate-500">No students enrolled in this classroom.</td>
+                    <td colspan="3" class="p-6 text-center text-slate-500">No students found in this classroom.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
 
-        <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded text-sm font-medium transition">
-            Save Attendance Record
+        {% if students %}
+        <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded text-sm font-semibold shadow transition">
+            Save Today's Attendance
         </button>
+        {% endif %}
     </form>
 </div>
 {% endblock %}
