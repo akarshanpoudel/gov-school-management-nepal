@@ -1,13 +1,15 @@
 import openpyxl
+import xml.etree.ElementTree as ET
 from datetime import date
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q
 from apps.users.models import User
+from apps.users.decorators import role_required
 from .models import Exam, Subject, Mark, ClassRoom, Attendance
 
 @login_required
+@role_required(User.Role.ADMIN, User.Role.TEACHER)
 def mark_entry_view(request, exam_id, subject_id):
     exam = get_object_or_404(Exam, id=exam_id)
     subject = get_object_or_404(Subject, id=subject_id)
@@ -42,6 +44,7 @@ def mark_entry_view(request, exam_id, subject_id):
     return render(request, 'academics/mark_entry.html', context)
 
 @login_required
+@role_required(User.Role.ADMIN, User.Role.TEACHER)
 def export_iemis_excel(request):
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -69,8 +72,42 @@ def export_iemis_excel(request):
     return response
 
 @login_required
+@role_required(User.Role.ADMIN, User.Role.TEACHER)
+def export_iemis_xml(request):
+    root = ET.Element("IEMIS_Student_Data", year="2081", country="Nepal")
+    students_node = ET.SubElement(root, "Students")
+
+    students = User.objects.filter(role=User.Role.STUDENT).select_related('classroom')
+    for student in students:
+        student_el = ET.SubElement(students_node, "Student")
+        ET.SubElement(student_el, "EMIS_ID").text = str(student.username)
+        ET.SubElement(student_el, "FullName").text = str(student.get_full_name() or student.username)
+        ET.SubElement(student_el, "Grade").text = str(student.classroom.name if student.classroom else "N/A")
+        
+        marks_node = ET.SubElement(student_el, "AcademicPerformance")
+        marks = Mark.objects.filter(student=student).select_related('subject')
+        for m in marks:
+            mark_el = ET.SubElement(marks_node, "SubjectMark")
+            ET.SubElement(mark_el, "SubjectCode").text = str(m.subject.code)
+            ET.SubElement(mark_el, "TheoryObtained").text = str(m.theory_obtained)
+            ET.SubElement(mark_el, "PracticalObtained").text = str(m.practical_obtained)
+            ET.SubElement(mark_el, "GradePoint").text = str(m.grade_point)
+            ET.SubElement(mark_el, "IsNG").text = str(m.is_ng)
+
+    tree = ET.ElementTree(root)
+    response = HttpResponse(content_type='application/xml')
+    response['Content-Disposition'] = 'attachment; filename="IEMIS_National_Data.xml"'
+    tree.write(response, encoding='utf-8', xml_declaration=True)
+    return response
+
+@login_required
 def student_report_card_view(request, student_id, exam_id):
     student = get_object_or_404(User, id=student_id, role=User.Role.STUDENT)
+    
+    # RBAC: Students can only view their own report card
+    if request.user.role == User.Role.STUDENT and request.user.id != student.id:
+        return render(request, '403.html', status=403)
+
     exam = get_object_or_404(Exam, id=exam_id)
     marks = Mark.objects.filter(student=student, exam=exam).select_related('subject')
 
@@ -101,6 +138,7 @@ def student_report_card_view(request, student_id, exam_id):
     return render(request, 'academics/report_card.html', context)
 
 @login_required
+@role_required(User.Role.ADMIN, User.Role.TEACHER)
 def attendance_entry_view(request, classroom_id):
     classroom = get_object_or_404(ClassRoom, id=classroom_id)
     students = User.objects.filter(classroom=classroom, role=User.Role.STUDENT)
@@ -163,3 +201,23 @@ def attendance_report_view(request, classroom_id):
         'report_data': report_data,
     }
     return render(request, 'academics/attendance_report.html', context)
+
+@login_required
+@role_required(User.Role.ADMIN, User.Role.TEACHER)
+def character_certificate_view(request, student_id):
+    student = get_object_or_404(User, id=student_id, role=User.Role.STUDENT)
+    latest_exam = Exam.objects.last()
+    marks = Mark.objects.filter(student=student, exam=latest_exam)
+    
+    total_credits = sum(float(m.subject.credit_hours) for m in marks)
+    weighted_gp = sum(m.grade_point * float(m.subject.credit_hours) for m in marks)
+    has_ng = any(m.is_ng for m in marks)
+    final_gpa = 0.0 if (has_ng or total_credits == 0) else round(weighted_gp / total_credits, 2)
+
+    context = {
+        'student': student,
+        'final_gpa': final_gpa,
+        'issue_date': date.today(),
+        'cert_no': f"CC-2081-{student.id:04d}",
+    }
+    return render(request, 'academics/character_certificate.html', context)
