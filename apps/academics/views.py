@@ -10,10 +10,13 @@ from .models import Exam, Subject, Mark, ClassRoom, Attendance
 
 @login_required
 @role_required(User.Role.ADMIN, User.Role.TEACHER)
-def mark_entry_view(request, exam_id, subject_id):
+def mark_entry_view(request, classroom_id, exam_id, subject_id):
+    classroom = get_object_or_404(ClassRoom, id=classroom_id)
     exam = get_object_or_404(Exam, id=exam_id)
     subject = get_object_or_404(Subject, id=subject_id)
-    students = User.objects.filter(role=User.Role.STUDENT)
+    
+    # Restrict student list strictly to the specified classroom
+    students = User.objects.filter(classroom=classroom, role=User.Role.STUDENT).order_by('username')
 
     if request.method == 'POST':
         for student in students:
@@ -32,17 +35,17 @@ def mark_entry_view(request, exam_id, subject_id):
         return redirect('core:dashboard')
 
     existing_marks = {
-        m.student_id: m for m in Mark.objects.filter(exam=exam, subject=subject)
+        m.student_id: m for m in Mark.objects.filter(exam=exam, subject=subject, student__in=students)
     }
 
     context = {
+        'classroom': classroom,
         'exam': exam,
         'subject': subject,
         'students': students,
         'existing_marks': existing_marks,
     }
     return render(request, 'academics/mark_entry.html', context)
-
 @login_required
 @role_required(User.Role.ADMIN, User.Role.TEACHER)
 def export_iemis_excel(request):
