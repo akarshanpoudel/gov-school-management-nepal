@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Character Certificate - {{ student.get_full_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print { display: none; }
+            body { background: white; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 flex flex-col items-center min-h-screen p-6 font-serif">
+
+    <div class="no-print mb-4 flex gap-4">
+        <button onclick="window.print()" class="bg-slate-900 text-white px-5 py-2 rounded text-sm font-sans font-medium hover:bg-slate-800 shadow transition">
+            🖨 Print / Save as PDF
+        </button>
+        <button onclick="window.history.back()" class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded text-sm font-sans hover:bg-slate-50 transition">
+            ← Back
+        </button>
+    </div>
+
+    <!-- Official Certificate Frame -->
+    <div class="w-[850px] bg-white border-[8px] border-double border-slate-900 p-10 relative shadow-2xl">
+        <div class="border-2 border-slate-400 p-8 text-center space-y-6">
+            
+            <!-- Header -->
+            <div>
+                <h3 class="text-xs uppercase tracking-widest font-sans font-bold text-slate-500">Government of Nepal Approved</h3>
+                <h1 class="text-3xl font-extrabold uppercase text-slate-900 tracking-wide mt-1">Shree Secondary School</h1>
+                <p class="text-sm font-sans text-slate-600">Kathmandu, Nepal | School Code: 2700192</p>
+            </div>
+
+            <div class="border-b-2 border-slate-900 w-24 mx-auto my-2"></div>
+
+            <h2 class="text-2xl font-bold uppercase tracking-wider text-slate-800 underline decoration-slate-400 decoration-2 underline-offset-8">
+                Character & Conduct Certificate
+            </h2>
+
+            <div class="flex justify-between text-xs font-sans text-slate-600 px-4 pt-2">
+                <span>Ref No: <strong>{{ cert_no }}</strong></span>
+                <span>Date: <strong>{{ issue_date }}</strong></span>
+            </div>
+
+            <!-- Content -->
+            <p class="text-justify text-base leading-relaxed font-serif text-slate-800 px-4 pt-4">
+                This is to certify that <strong>{{ student.get_full_name|default:student.username }}</strong>, 
+                Roll/EMIS ID <strong>{{ student.username }}</strong>, was a bona fide student of this institution in 
+                <strong>{{ student.classroom.name|default:"Grade 10" }}</strong>. 
+                During their academic period, their general conduct, character, and obedience to institutional norms were found to be 
+                <strong class="underline decoration-slate-400">EXCELLENT</strong>.
+            </p>
+
+            <p class="text-justify text-base leading-relaxed font-serif text-slate-800 px-4">
+                According to institutional records, they achieved a Cumulative Grade Point Average (GPA) of 
+                <strong class="font-bold text-slate-900 font-mono">{{ final_gpa }}</strong> in the terminal examinations. 
+                To the best of our knowledge, they bear no disciplinary records.
+            </p>
+
+            <p class="text-left text-base font-serif text-slate-800 px-4 pt-2">
+                We wish them all the success in their future academic endeavors.
+            </p>
+
+            <!-- Signatures -->
+            <div class="grid grid-cols-3 gap-4 pt-16 text-xs font-sans text-slate-700">
+                <div class="text-center">
+                    <div class="border-t border-slate-400 w-32 mx-auto mb-1"></div>
+                    <p>Prepared By</p>
+                </div>
+                <div class="text-center">
+                    <div class="border-t border-slate-400 w-32 mx-auto mb-1"></div>
+                    <p>Class Teacher</p>
+                </div>
+                <div class="text-center">
+                    <div class="border-t border-slate-400 w-32 mx-auto mb-1"></div>
+                    <p class="font-bold text-slate-900">Headmaster / Seal</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>
