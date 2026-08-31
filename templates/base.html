@@ -9,30 +9,45 @@
 <body class="bg-slate-100 min-h-screen flex flex-col font-sans">
 
     <!-- Top Navigation Bar -->
-    <nav class="bg-slate-900 text-white px-6 py-3.5 flex justify-between items-center shadow-md">
-        <!-- Clickable Brand Title -->
-        <a href="{% url 'core:dashboard' %}" class="text-base font-bold tracking-wide hover:text-slate-300 transition flex items-center gap-2">
-            <span>🏫</span> Government School Management System
-        </a>
+<nav class="bg-slate-900 text-white px-6 py-3.5 flex justify-between items-center shadow-md">
+    <!-- Clickable Brand Title -->
+    <a href="{% url 'core:dashboard' %}" class="text-base font-bold tracking-wide hover:text-slate-300 transition flex items-center gap-2">
+        <span></span> Government School Management System
+    </a>
 
-        <!-- Right Side Nav Items -->
-        <div class="flex items-center gap-6 text-xs">
+    <!-- Right Side Nav Items -->
+    <div class="flex items-center gap-5 text-xs">
+        {% if user.is_authenticated %}
             <div class="flex items-center gap-4 border-r border-slate-700 pr-4">
                 <a href="{% url 'core:dashboard' %}" class="text-slate-300 hover:text-white transition font-medium">Dashboard</a>
-                <a href="{% url 'fees:dashboard' %}" class="text-slate-300 hover:text-white transition font-medium">Fee Engine</a>
-                <a href="{% url 'academics:export_iemis' %}" class="text-slate-300 hover:text-white transition font-medium">IEMIS</a>
+                
+                {% if user.role == 'ADMIN' %}
+                    <a href="{% url 'fees:dashboard' %}" class="text-slate-300 hover:text-white transition font-medium">Fee Engine</a>
+                    <a href="{% url 'academics:export_iemis' %}" class="text-slate-300 hover:text-white transition font-medium">IEMIS</a>
+                {% endif %}
             </div>
-            <!-- Floating Accessibility Widget -->
-<div class="fixed bottom-4 right-4 z-50">
-    <!-- Toggle Button with Accessibility Icon -->
-    <button id="a11y-toggle-btn" 
-            onclick="toggleA11yMenu()" 
-            aria-label="Open Accessibility Options" 
-            class="bg-slate-900 text-white p-3 rounded-full shadow-lg hover:bg-slate-800 transition border-2 border-white focus:ring-4 focus:ring-slate-400">
-        <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
-            <path d="M12 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm9 7h-6v13h-2v-6h-2v6H9V9H3V7h18v2z"/>
-        </svg>
-    </button>
+
+            <!-- User Status & Logout -->
+            <div class="flex items-center gap-3">
+                <span class="text-slate-400">
+                    Logged in as: <strong class="text-white">{{ user.username }}</strong> 
+                    <span class="text-[10px] bg-slate-800 border border-slate-700 text-slate-300 px-1.5 py-0.5 rounded uppercase ml-1">{{ user.role }}</span>
+                </span>
+                
+                <form method="POST" action="{% url 'logout' %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded text-[11px] font-semibold transition focus:outline-none">
+                        Logout
+                    </button>
+                </form>
+            </div>
+        {% else %}
+            <a href="{% url 'login' %}" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded font-semibold transition">
+                Log In
+            </a>
+        {% endif %}
+    </div>
+</nav>
 
     <!-- Options Menu -->
     <div id="a11y-menu" class="hidden absolute bottom-14 right-0 bg-white border border-slate-300 rounded-lg shadow-xl p-4 w-56 text-xs text-slate-800 space-y-3">
