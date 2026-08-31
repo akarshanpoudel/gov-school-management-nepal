@@ -1,93 +1,147 @@
 {% extends 'base.html' %}
 
+{% block title %}Dashboard - Government School Management System{% endblock %}
+
 {% block content %}
-<div class="max-w-6xl mx-auto space-y-6">
-    <!-- Header Card -->
-    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Top Action Header -->
+    <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-slate-200">
         <div>
-            <h2 class="text-2xl font-bold text-slate-900">Government School Management System</h2>
-            <p class="text-slate-600 text-sm">Logged in as: <span class="font-semibold text-slate-800">{{ request.user.username }} ({{ request.user.get_role_display }})</span></p>
+            <h1 class="text-lg font-bold text-slate-900">Government School Management System</h1>
+            <p class="text-xs text-slate-500">Logged in as: <strong class="text-slate-800">{{ request.user.username }}</strong> ({{ request.user.get_role_display }})</p>
         </div>
-        <div class="flex flex-wrap gap-2">
-            <a href="{% url 'fees:dashboard' %}" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-2 rounded-md text-sm font-medium transition shadow-sm">
-                Fee Billing
-            </a>
-            <a href="{% url 'academics:export_iemis' %}" class="bg-slate-900 text-white px-3 py-2 rounded-md hover:bg-slate-800 text-sm font-medium transition shadow-sm">
-                IEMIS (.xlsx)
-            </a>
-            <a href="{% url 'academics:export_iemis_xml' %}" class="bg-indigo-700 hover:bg-indigo-800 text-white px-3 py-2 rounded-md text-sm font-medium transition shadow-sm">
-                IEMIS (.xml)
-            </a>
-            <a href="/admin/" class="bg-slate-100 text-slate-700 border border-slate-300 px-3 py-2 rounded-md hover:bg-slate-200 text-sm font-medium transition">
-                Admin Shell
-            </a>
+        <div class="flex gap-2">
+            {% if request.user.role == 'ADMIN' %}
+                <a href="{% url 'fees:dashboard' %}" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-semibold shadow transition">Fee Billing</a>
+                <a href="{% url 'academics:export_iemis' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-xs font-semibold shadow transition">IEMIS (.xlsx)</a>
+                <a href="{% url 'academics:export_iemis_xml' %}" class="bg-indigo-800 hover:bg-indigo-900 text-white px-3 py-1.5 rounded text-xs font-semibold shadow transition">IEMIS (.xml)</a>
+                <a href="/admin/" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-semibold transition">Admin Shell</a>
+            {% endif %}
         </div>
     </div>
 
-    <!-- Classroom & Attendance Section -->
-    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-        <h3 class="text-lg font-bold text-slate-900 mb-4">Classroom Attendance Shortcuts</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {% for room in classrooms %}
-            <div class="border border-slate-200 rounded p-4 flex justify-between items-center bg-slate-50">
+    <!-- Mark Entry Direct Portal (NEW) -->
+    <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200" role="region" aria-labelledby="mark-entry-heading">
+        <h2 id="mark-entry-heading" class="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+            📝 Subject Mark Entry Portal
+        </h2>
+        
+        <form id="markEntryForm" onsubmit="navigateToMarkEntry(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <!-- Select Classroom -->
+            <div>
+                <label for="select_classroom" class="block text-xs font-semibold text-slate-700 mb-1">Select Classroom</label>
+                <select id="select_classroom" required class="w-full border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-slate-900 focus:outline-none">
+                    <option value="">-- Select Class --</option>
+                    {% for c in classrooms %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Select Examination -->
+            <div>
+                <label for="select_exam" class="block text-xs font-semibold text-slate-700 mb-1">Select Examination</label>
+                <select id="select_exam" required class="w-full border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-slate-900 focus:outline-none">
+                    <option value="">-- Select Exam --</option>
+                    {% for e in exams %}
+                        <option value="{{ e.id }}">{{ e.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Select Subject -->
+            <div>
+                <label for="select_subject" class="block text-xs font-semibold text-slate-700 mb-1">Select Subject</label>
+                <select id="select_subject" required class="w-full border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-slate-900 focus:outline-none">
+                    <option value="">-- Select Subject --</option>
+                    {% for s in subjects %}
+                        <option value="{{ s.id }}">{{ s.name }} ({{ s.code }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Submit Button -->
+            <div>
+                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2 rounded text-xs font-semibold shadow transition focus:ring-2 focus:ring-slate-900 focus:outline-none">
+                    Open Mark Sheet →
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Classroom Attendance Shortcuts -->
+    <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
+        <h2 class="text-base font-bold text-slate-900 mb-3">Classroom Attendance Shortcuts</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+            {% for classroom in classrooms %}
+            <div class="border border-slate-200 rounded p-3 flex flex-col justify-between bg-slate-50">
                 <div>
-                    <h4 class="font-bold text-slate-900">{{ room.name }} {{ room.section|default:"" }}</h4>
-                    <p class="text-xs text-slate-500">Teacher: {{ room.class_teacher.get_full_name|default:"Unassigned" }}</p>
+                    <h3 class="font-bold text-sm text-slate-900">{{ classroom.name }}</h3>
+                    <p class="text-[10px] text-slate-500">Teacher: {{ classroom.class_teacher.get_full_name|default:"Unassigned" }}</p>
                 </div>
-                <div class="flex gap-2">
-                    <a href="{% url 'academics:attendance_entry' room.id %}" class="bg-slate-900 hover:bg-slate-800 text-white text-xs px-3 py-1.5 rounded font-medium transition">
-                        Take Attendance
-                    </a>
-                    <a href="{% url 'academics:attendance_report' room.id %}" class="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs px-3 py-1.5 rounded font-medium transition">
-                        Report
-                    </a>
+                <div class="flex gap-1 mt-3">
+                    <a href="{% url 'academics:attendance_entry' classroom.id %}" class="flex-1 bg-slate-900 text-white text-[10px] text-center py-1 rounded font-semibold hover:bg-slate-800 transition">Take Attendance</a>
+                    <a href="{% url 'academics:attendance_report' classroom.id %}" class="bg-slate-200 text-slate-700 text-[10px] px-2 py-1 rounded font-semibold hover:bg-slate-300 transition">Report</a>
                 </div>
             </div>
-            {% empty %}
-            <p class="text-sm text-slate-500 col-span-2">No classrooms available.</p>
             {% endfor %}
         </div>
     </div>
 
-    <!-- Student List Section -->
-    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-        <h3 class="text-lg font-bold text-slate-900 mb-4">Enrolled Students Directory</h3>
-        
-        <table class="w-full text-left border-collapse border border-slate-200 text-sm">
-            <thead class="bg-slate-50 text-slate-700 uppercase text-xs font-semibold">
-                <tr>
-                    <th class="border border-slate-200 p-3">ID</th>
-                    <th class="border border-slate-200 p-3">Student Roll</th>
-                    <th class="border border-slate-200 p-3">Full Name</th>
-                    <th class="border border-slate-200 p-3">Classroom</th>
-                    <th class="border border-slate-200 p-3 text-center">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200">
-                {% for student in students %}
-                <tr class="hover:bg-slate-50 transition">
-                    <td class="border border-slate-200 p-3 font-mono text-slate-500">{{ student.id }}</td>
-                    <td class="border border-slate-200 p-3 font-medium text-slate-900">{{ student.username }}</td>
-                    <td class="border border-slate-200 p-3 text-slate-700">{{ student.get_full_name|default:"N/A" }}</td>
-                    <td class="border border-slate-200 p-3 text-slate-600">{{ student.classroom.name|default:"Unassigned" }}</td>
-                    <td class="border border-slate-200 p-3 text-center space-x-1">
-                        {% if latest_exam %}
-                            <a href="{% url 'academics:report_card' student.id latest_exam.id %}" class="inline-block bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-xs font-medium transition">
-                                Grade Sheet
-                            </a>
-                        {% endif %}
-                        <a href="{% url 'academics:character_certificate' student.id %}" class="inline-block bg-slate-800 hover:bg-slate-900 text-white px-2.5 py-1 rounded text-xs font-medium transition">
-                            Certificate
-                        </a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="p-6 text-center text-slate-500">No students enrolled.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Enrolled Students Directory -->
+    <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
+        <h2 class="text-base font-bold text-slate-900 mb-3">Enrolled Students Directory</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse border border-slate-200 text-xs">
+                <thead class="bg-slate-50 text-slate-700 uppercase font-semibold">
+                    <tr>
+                        <th class="border border-slate-200 p-2.5">ID</th>
+                        <th class="border border-slate-200 p-2.5">Student Roll</th>
+                        <th class="border border-slate-200 p-2.5">Full Name</th>
+                        <th class="border border-slate-200 p-2.5">Classroom</th>
+                        <th class="border border-slate-200 p-2.5 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    {% for student in students %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="border border-slate-200 p-2.5 font-mono">{{ student.id }}</td>
+                        <td class="border border-slate-200 p-2.5 font-mono font-semibold">{{ student.username }}</td>
+                        <td class="border border-slate-200 p-2.5 font-medium">{{ student.get_full_name|default:student.username }}</td>
+                        <td class="border border-slate-200 p-2.5">{{ student.classroom.name|default:"Unassigned" }}</td>
+                        <td class="border border-slate-200 p-2.5 text-center space-x-1">
+                            {% if exams.first %}
+                            <a href="{% url 'academics:report_card' student.id exams.first.id %}" class="bg-emerald-700 text-white text-[10px] px-2.5 py-1 rounded font-semibold hover:bg-emerald-800 transition">Grade Sheet</a>
+                            {% endif %}
+                            <a href="{% url 'academics:character_certificate' student.id %}" class="bg-slate-800 text-white text-[10px] px-2.5 py-1 rounded font-semibold hover:bg-slate-900 transition">Certificate</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="p-4 text-center text-slate-500">No students found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
+
 </div>
+
+<!-- JavaScript to build dynamic Mark Entry URL -->
+<script>
+function navigateToMarkEntry(event) {
+    event.preventDefault();
+    const classroomId = document.getElementById('select_classroom').value;
+    const examId = document.getElementById('select_exam').value;
+    const subjectId = document.getElementById('select_subject').value;
+
+    if (classroomId && examId && subjectId) {
+        window.location.href = `/academics/marks/entry/${classroomId}/${examId}/${subjectId}/`;
+    } else {
+        alert('Please select Classroom, Exam, and Subject.');
+    }
+}
+</script>
 {% endblock %}

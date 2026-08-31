@@ -22,6 +22,56 @@
                 <a href="{% url 'fees:dashboard' %}" class="text-slate-300 hover:text-white transition font-medium">Fee Engine</a>
                 <a href="{% url 'academics:export_iemis' %}" class="text-slate-300 hover:text-white transition font-medium">IEMIS</a>
             </div>
+            <!-- Floating Accessibility Widget -->
+<div class="fixed bottom-4 right-4 z-50">
+    <!-- Toggle Button with Accessibility Icon -->
+    <button id="a11y-toggle-btn" 
+            onclick="toggleA11yMenu()" 
+            aria-label="Open Accessibility Options" 
+            class="bg-slate-900 text-white p-3 rounded-full shadow-lg hover:bg-slate-800 transition border-2 border-white focus:ring-4 focus:ring-slate-400">
+        <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
+            <path d="M12 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm9 7h-6v13h-2v-6h-2v6H9V9H3V7h18v2z"/>
+        </svg>
+    </button>
+
+    <!-- Options Menu -->
+    <div id="a11y-menu" class="hidden absolute bottom-14 right-0 bg-white border border-slate-300 rounded-lg shadow-xl p-4 w-56 text-xs text-slate-800 space-y-3">
+        <h3 class="font-bold border-b pb-1 text-slate-900">Accessibility Preferences</h3>
+        
+        <button onclick="toggleHighContrast()" class="w-full text-left bg-slate-100 hover:bg-slate-200 p-2 rounded font-medium">
+            🌓 Toggle High Contrast
+        </button>
+        
+        <div class="space-y-1">
+            <span class="font-medium text-[11px] text-slate-600">Text Size:</span>
+            <div class="flex gap-2">
+                <button onclick="changeFontSize(1)" class="flex-1 bg-slate-100 hover:bg-slate-200 py-1 rounded font-bold">A+</button>
+                <button onclick="changeFontSize(-1)" class="flex-1 bg-slate-100 hover:bg-slate-200 py-1 rounded font-bold">A-</button>
+                <button onclick="resetFontSize()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-1 rounded">Reset</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleA11yMenu() {
+    document.getElementById('a11y-menu').classList.toggle('hidden');
+}
+
+function toggleHighContrast() {
+    document.body.classList.toggle('invert');
+}
+
+let currentSize = 100;
+function changeFontSize(delta) {
+    currentSize += delta * 10;
+    document.body.style.fontSize = currentSize + '%';
+}
+function resetFontSize() {
+    currentSize = 100;
+    document.body.style.fontSize = '100%';
+}
+</script>
 
             {% if user.is_authenticated %}
             <div class="text-slate-400">
