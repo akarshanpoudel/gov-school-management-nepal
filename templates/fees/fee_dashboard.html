@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Financial Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+            <h3 class="text-xs uppercase font-semibold text-slate-500">Total Collected Revenue</h3>
+            <p class="text-3xl font-extrabold text-emerald-600 mt-2">Rs. {{ total_collected|floatformat:2 }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+            <h3 class="text-xs uppercase font-semibold text-slate-500">Outstanding Receivables</h3>
+            <p class="text-3xl font-extrabold text-red-600 mt-2">Rs. {{ total_due|floatformat:2 }}</p>
+        </div>
+    </div>
+
+    <!-- Invoices List -->
+    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-slate-900">Student Invoices</h3>
+            <a href="{% url 'fees:promotion' %}" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded text-xs font-semibold">
+                Go to Academic Promotion Engine →
+            </a>
+        </div>
+
+        <table class="w-full text-left border-collapse border border-slate-200 text-sm">
+            <thead class="bg-slate-50 text-slate-700 uppercase text-xs font-semibold">
+                <tr>
+                    <th class="border border-slate-200 p-3">Inv #</th>
+                    <th class="border border-slate-200 p-3">Student Name</th>
+                    <th class="border border-slate-200 p-3">Title</th>
+                    <th class="border border-slate-200 p-3 text-right">Total</th>
+                    <th class="border border-slate-200 p-3 text-right">Paid</th>
+                    <th class="border border-slate-200 p-3 text-right">Balance</th>
+                    <th class="border border-slate-200 p-3 text-center">Status</th>
+                    <th class="border border-slate-200 p-3 text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+                {% for inv in invoices %}
+                <tr class="hover:bg-slate-50">
+                    <td class="border border-slate-200 p-3 font-mono text-slate-500">#{{ inv.id }}</td>
+                    <td class="border border-slate-200 p-3 font-medium text-slate-900">{{ inv.student.get_full_name|default:inv.student.username }}</td>
+                    <td class="border border-slate-200 p-3 text-slate-600">{{ inv.title }}</td>
+                    <td class="border border-slate-200 p-3 text-right font-mono">Rs. {{ inv.total_amount }}</td>
+                    <td class="border border-slate-200 p-3 text-right font-mono text-emerald-600">Rs. {{ inv.paid_amount }}</td>
+                    <td class="border border-slate-200 p-3 text-right font-mono text-red-600 font-semibold">Rs. {{ inv.remaining_balance }}</td>
+                    <td class="border border-slate-200 p-3 text-center">
+                        {% if inv.status == 'PAID' %}
+                            <span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded font-bold">PAID</span>
+                        {% elif inv.status == 'PARTIAL' %}
+                            <span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-bold">PARTIAL</span>
+                        {% else %}
+                            <span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded font-bold">UNPAID</span>
+                        {% endif %}
+                    </td>
+                    <td class="border border-slate-200 p-3 text-center">
+                        {% if inv.status != 'PAID' %}
+                            <a href="{% url 'fees:record_payment' inv.id %}" class="bg-slate-900 hover:bg-slate-800 text-white text-xs px-2.5 py-1 rounded transition">
+                                + Collect
+                            </a>
+                        {% else %}
+                            <span class="text-xs text-slate-400">Settled</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="p-6 text-center text-slate-500">No invoices issued yet. Run the fee seed script.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

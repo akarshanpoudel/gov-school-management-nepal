@@ -17,6 +17,41 @@
             </a>
         </div>
     </div>
+<div class="flex gap-2">
+    <a href="{% url 'fees:dashboard' %}" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-2 rounded-md text-sm font-medium transition">
+        Fee Billing Dashboard
+    </a>
+    <a href="{% url 'academics:export_iemis' %}" class="bg-slate-900 text-white px-3 py-2 rounded-md hover:bg-slate-800 text-sm font-medium transition shadow-sm">
+        Export IEMIS (.xlsx)
+    </a>
+    <a href="/admin/" class="bg-slate-100 text-slate-700 border border-slate-300 px-3 py-2 rounded-md hover:bg-slate-200 text-sm font-medium transition">
+        Django Admin
+    </a>
+</div>
+    <!-- Classroom & Attendance Section -->
+    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+        <h3 class="text-lg font-bold text-slate-900 mb-4">Classroom Attendance Shortcuts</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for room in classrooms %}
+            <div class="border border-slate-200 rounded p-4 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h4 class="font-bold text-slate-900">{{ room.name }} {{ room.section|default:"" }}</h4>
+                    <p class="text-xs text-slate-500">Teacher: {{ room.class_teacher.get_full_name|default:"Unassigned" }}</p>
+                </div>
+                <div class="flex gap-2">
+                    <a href="{% url 'academics:attendance_entry' room.id %}" class="bg-slate-900 hover:bg-slate-800 text-white text-xs px-3 py-1.5 rounded font-medium transition">
+                        Take Attendance
+                    </a>
+                    <a href="{% url 'academics:attendance_report' room.id %}" class="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs px-3 py-1.5 rounded font-medium transition">
+                        Report
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-sm text-slate-500 col-span-2">No classrooms available. Please run the seed script.</p>
+            {% endfor %}
+        </div>
+    </div>
 
     <!-- Student List Section -->
     <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
@@ -28,6 +63,7 @@
                     <th class="border border-slate-200 p-3">ID</th>
                     <th class="border border-slate-200 p-3">Student Roll / Username</th>
                     <th class="border border-slate-200 p-3">Full Name</th>
+                    <th class="border border-slate-200 p-3">Classroom</th>
                     <th class="border border-slate-200 p-3 text-center">Action</th>
                 </tr>
             </thead>
@@ -37,6 +73,7 @@
                     <td class="border border-slate-200 p-3 font-mono text-slate-500">{{ student.id }}</td>
                     <td class="border border-slate-200 p-3 font-medium text-slate-900">{{ student.username }}</td>
                     <td class="border border-slate-200 p-3 text-slate-700">{{ student.get_full_name|default:"N/A" }}</td>
+                    <td class="border border-slate-200 p-3 text-slate-600">{{ student.classroom.name|default:"Unassigned" }}</td>
                     <td class="border border-slate-200 p-3 text-center">
                         {% if latest_exam %}
                             <a href="{% url 'academics:report_card' student.id latest_exam.id %}" class="inline-block bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-medium transition">
@@ -49,7 +86,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="p-6 text-center text-slate-500">No students found. Please seed student records first.</td>
+                    <td colspan="5" class="p-6 text-center text-slate-500">No students found. Please seed student records first.</td>
                 </tr>
                 {% endfor %}
             </tbody>

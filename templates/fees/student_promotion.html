@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+    <h2 class="text-xl font-bold text-slate-900 mb-2">Academic Promotion Engine</h2>
+    <p class="text-sm text-slate-600 mb-6">Promote qualifying students to the next grade based on examination performance (NG filter enforced).</p>
+
+    <form method="POST" class="space-y-4">
+        {% csrf_token %}
+        <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Source Classroom (Current)</label>
+            <select name="source_class" required class="w-full border border-slate-300 rounded p-2 text-sm">
+                {% for room in classrooms %}
+                    <option value="{{ room.id }}">{{ room.name }} {{ room.section|default:"" }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Target Classroom (Destination)</label>
+            <select name="target_class" required class="w-full border border-slate-300 rounded p-2 text-sm">
+                {% for room in classrooms %}
+                    <option value="{{ room.id }}">{{ room.name }} {{ room.section|default:"" }}</option>
+                {% endfor %}
+                <option value="GRADUATE">-- Graduation / Passed Out --</option>
+            </select>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 p-4 rounded text-xs text-amber-900">
+            <strong>Rule Enforced:</strong> Students with an <strong>NG (Not Graded)</strong> status in the latest examination will be filtered out and retained in their current class.
+        </div>
+
+        <button type="submit" onclick="return confirm('Execute academic promotion for qualifying students?');" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded font-medium text-sm transition">
+            Execute Academic Promotion
+        </button>
+    </form>
+</div>
+{% endblock %}

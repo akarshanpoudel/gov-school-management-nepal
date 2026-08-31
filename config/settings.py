@@ -28,9 +28,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     # Local Apps
-    'apps.users',
-    'apps.core',
+   'apps.users',
     'apps.academics',
+    'apps.fees',
+    'apps.core',
     
     # Third Party
     'simple_history',
