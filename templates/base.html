@@ -21,10 +21,11 @@
             <div class="flex items-center gap-4 border-r border-slate-700 pr-4">
                 <a href="{% url 'core:dashboard' %}" class="text-slate-300 hover:text-white transition font-medium">Dashboard</a>
                 
-                {% if user.role == 'ADMIN' %}
-                    <a href="{% url 'fees:dashboard' %}" class="text-slate-300 hover:text-white transition font-medium">Fee Engine</a>
-                    <a href="{% url 'academics:export_iemis' %}" class="text-slate-300 hover:text-white transition font-medium">IEMIS</a>
-                {% endif %}
+              {% if user.role == 'ADMIN' %}
+    <a href="{% url 'fees:dashboard' %}" class="text-slate-300 hover:text-white transition font-medium">Fee Engine</a>
+    <a href="{% url 'academics:export_iemis_csv' %}" class="text-slate-300 hover:text-white transition font-medium">IEMIS (CSV)</a>
+    <a href="{% url 'academics:export_iemis_xml' %}" class="text-slate-300 hover:text-white transition font-medium">IEMIS (XML)</a>
+{% endif %}
             </div>
 
             <!-- User Status & Logout -->

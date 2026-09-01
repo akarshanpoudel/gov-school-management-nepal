@@ -1,14 +1,28 @@
+import csv
+import xml.etree.ElementTree as ET
 from datetime import date
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+
 from apps.academics.models import ClassRoom, Exam, Subject, Mark, Attendance
 from apps.users.models import User
 from apps.users.decorators import role_required
-import csv
-import xml.etree.ElementTree as ET
-from django.db.models import Count, Q
+
+
+def get_grade_info(percentage):
+    """Calculates Letter Grade and Grade Point (GPA) based on standard Nepal CDC grading."""
+    if percentage >= 90: return 'A+', 4.0
+    elif percentage >= 80: return 'A', 3.6
+    elif percentage >= 70: return 'B+', 3.2
+    elif percentage >= 60: return 'B', 2.8
+    elif percentage >= 50: return 'C+', 2.4
+    elif percentage >= 40: return 'C', 2.0
+    elif percentage >= 35: return 'D', 1.6
+    else: return 'NG', 0.0
+
 
 @login_required
 @role_required(User.Role.TEACHER, User.Role.ADMIN)
@@ -92,25 +106,56 @@ def attendance_entry_view(request, classroom_id):
     return render(request, 'academics/attendance_entry.html', context)
 
 
-# REMAINING STUBS
-
 @login_required
 def report_card_view(request, student_id, exam_id):
     student = get_object_or_404(User, id=student_id, role=User.Role.STUDENT)
     exam = get_object_or_404(Exam, id=exam_id)
-    marks = Mark.objects.filter(student=student, exam=exam).select_related('subject')
+    classroom = student.classroom
 
-    total_theory = sum(m.theory_marks for m in marks)
-    total_practical = sum(m.practical_marks for m in marks)
-    grand_total = total_theory + total_practical
+    if classroom:
+        subjects = Subject.objects.filter(classroom=classroom)
+    else:
+        subjects = Subject.objects.all()
+
+    marks = Mark.objects.filter(student=student, exam=exam)
+    marks_dict = {m.subject_id: m for m in marks}
+
+    report_data = []
+    total_gpa_points = 0
+    valid_subjects_count = 0
+
+    for subject in subjects:
+        mark = marks_dict.get(subject.id)
+        theory = mark.theory_marks if mark else 0.0
+        practical = mark.practical_marks if mark else 0.0
+        total_obtained = theory + practical
+        
+        pct = (total_obtained / subject.full_marks * 100) if subject.full_marks > 0 else 0
+        grade, gpa = get_grade_info(pct)
+
+        if mark:
+            total_gpa_points += gpa
+            valid_subjects_count += 1
+
+        report_data.append({
+            'subject': subject,
+            'theory': theory,
+            'practical': practical,
+            'total': total_obtained,
+            'grade': grade if mark else 'N/A',
+            'gpa': gpa if mark else 0.0
+        })
+
+    final_gpa = round(total_gpa_points / valid_subjects_count, 2) if valid_subjects_count > 0 else 0.0
+    overall_grade, _ = get_grade_info(final_gpa * 25) if valid_subjects_count > 0 else ('N/A', 0.0)
 
     context = {
         'student': student,
         'exam': exam,
-        'marks': marks,
-        'total_theory': total_theory,
-        'total_practical': total_practical,
-        'grand_total': grand_total,
+        'classroom': classroom,
+        'report_data': report_data,
+        'final_gpa': final_gpa,
+        'overall_grade': overall_grade,
         'today': date.today(),
     }
     return render(request, 'academics/report_card.html', context)

@@ -2,12 +2,14 @@ from django.db import models
 from django.conf import settings
 from simple_history.models import HistoricalRecords
 
+
 class AcademicYear(models.Model):
     title = models.CharField(max_length=20, help_text="e.g., 2081 BS")
     is_active = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
+
 
 class ClassRoom(models.Model):
     name = models.CharField(max_length=50, help_text="e.g., Grade 10")
@@ -24,19 +26,33 @@ class ClassRoom(models.Model):
     def __str__(self):
         return f"{self.name} {self.section or ''}".strip()
 
+
 class Subject(models.Model):
     name = models.CharField(max_length=100)
-    code = models.CharField(max_length=20, unique=True)
-    credit_hours = models.DecimalField(max_digits=4, decimal_places=2, help_text="e.g., 4.0")
+    code = models.CharField(max_length=20, blank=True, null=True)
+    classroom = models.ForeignKey(
+        ClassRoom, 
+        on_delete=models.CASCADE, 
+        related_name='subjects',
+        null=True,
+        blank=True
+    )
+    is_optional = models.BooleanField(default=False)
+    credit_hours = models.DecimalField(max_digits=4, decimal_places=2, default=4.00)
     
-    full_marks_theory = models.DecimalField(max_digits=5, decimal_places=2, default=75.0)
-    full_marks_practical = models.DecimalField(max_digits=5, decimal_places=2, default=25.0)
-    
-    pass_marks_theory = models.DecimalField(max_digits=5, decimal_places=2, default=26.25)
-    pass_marks_practical = models.DecimalField(max_digits=5, decimal_places=2, default=10.0)
+    full_marks = models.FloatField(default=100.0)
+    pass_marks = models.FloatField(default=35.0)
+
+    # Theory & Practical mark breakdowns required by Mark model calculations
+    full_marks_theory = models.FloatField(default=75.0)
+    pass_marks_theory = models.FloatField(default=27.0)
+    full_marks_practical = models.FloatField(default=25.0)
+    pass_marks_practical = models.FloatField(default=10.0)
 
     def __str__(self):
-        return f"{self.name} ({self.code})"
+        room_name = self.classroom.name if getattr(self, 'classroom', None) else "Unassigned"
+        return f"{self.name} ({room_name})"
+
 
 class Exam(models.Model):
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
@@ -46,8 +62,13 @@ class Exam(models.Model):
     def __str__(self):
         return f"{self.title} - {self.academic_year}"
 
+
 class Mark(models.Model):
-    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, limit_choices_to={'role': 'STUDENT'})
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        limit_choices_to={'role': 'STUDENT'}
+    )
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     
@@ -59,11 +80,20 @@ class Mark(models.Model):
     class Meta:
         unique_together = ('student', 'exam', 'subject')
 
+    # Alias properties to ensure compatibility with views or templates expecting theory_marks / practical_marks
+    @property
+    def theory_marks(self):
+        return float(self.theory_obtained)
+
+    @property
+    def practical_marks(self):
+        return float(self.practical_obtained)
+
     @property
     def is_ng(self):
-        if self.theory_obtained < self.subject.pass_marks_theory:
+        if float(self.theory_obtained) < self.subject.pass_marks_theory:
             return True
-        if self.practical_obtained < self.subject.pass_marks_practical:
+        if float(self.practical_obtained) < self.subject.pass_marks_practical:
             return True
         return False
 
@@ -77,7 +107,10 @@ class Mark(models.Model):
             return 0.0
             
         total_full = self.subject.full_marks_theory + self.subject.full_marks_practical
-        percentage = (self.total_marks / total_full) * 100
+        if total_full == 0:
+            return 0.0
+
+        percentage = (float(self.total_marks) / total_full) * 100
 
         if percentage >= 90: return 4.0
         if percentage >= 80: return 3.6
@@ -90,6 +123,7 @@ class Mark(models.Model):
 
     def __str__(self):
         return f"{self.student.username} - {self.subject.name}: {self.total_marks}"
+
 
 class Attendance(models.Model):
     class Status(models.TextChoices):
