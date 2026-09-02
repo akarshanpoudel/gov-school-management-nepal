@@ -138,7 +138,10 @@ function navigateToMarkEntry(event) {
     const subjectId = document.getElementById('select_subject').value;
 
     if (classroomId && examId && subjectId) {
-        window.location.href = `/academics/marks/entry/${classroomId}/${examId}/${subjectId}/`;
+        // URL is /marks/entry/<classroom_id>/<subject_id>/<exam_id>/ -
+        // subject and exam were previously swapped here, sending teachers
+        // to the wrong subject's mark entry page.
+        window.location.href = `/academics/marks/entry/${classroomId}/${subjectId}/${examId}/`;
     } else {
         alert('Please select Classroom, Exam, and Subject.');
     }

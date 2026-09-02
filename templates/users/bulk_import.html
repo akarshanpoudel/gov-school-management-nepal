@@ -11,6 +11,29 @@
         </a>
     </div>
 
+    {% if new_credentials %}
+    <div class="bg-amber-50 border border-amber-300 p-4 rounded mb-6 text-xs text-slate-800 space-y-3">
+        <strong class="text-slate-900 block">New Student Credentials — copy these now</strong>
+        <p class="text-slate-600">These temporary passwords are shown only once and are not stored anywhere. Distribute them to students/guardians securely, then have each student set their own password on first login.</p>
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-amber-300">
+                    <th class="py-1 pr-4">Username</th>
+                    <th class="py-1">Temporary Password</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cred in new_credentials %}
+                <tr class="border-b border-amber-200">
+                    <td class="py-1 pr-4 font-mono">{{ cred.username }}</td>
+                    <td class="py-1 font-mono">{{ cred.password }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
     <!-- Format Guide -->
     <div class="bg-slate-50 border border-slate-200 p-4 rounded mb-6 text-xs text-slate-700 space-y-2">
         <strong class="text-slate-900 block">Required CSV Header Format:</strong>
