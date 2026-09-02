@@ -6,10 +6,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 
 from apps.academics.models import ClassRoom, Exam, Subject, Mark, Attendance
 from apps.users.models import User
 from apps.users.decorators import role_required
+from apps.users.permissions import can_manage_classroom, can_view_student_record
 
 
 def get_grade_info(percentage):
@@ -30,9 +32,14 @@ def mark_entry_view(request, classroom_id, subject_id, exam_id):
     classroom = get_object_or_404(ClassRoom, id=classroom_id)
     subject = get_object_or_404(Subject, id=subject_id)
     exam = get_object_or_404(Exam, id=exam_id)
+
+    if not can_manage_classroom(request.user, classroom):
+        raise PermissionDenied("You are not the assigned class teacher for this classroom.")
+
     students = User.objects.filter(role=User.Role.STUDENT, classroom=classroom).order_by('username')
 
     if request.method == 'POST':
+        has_errors = False
         for student in students:
             theory_val = request.POST.get(f'theory_{student.id}', '0')
             practical_val = request.POST.get(f'practical_{student.id}', '0')
@@ -43,17 +50,39 @@ def mark_entry_view(request, classroom_id, subject_id, exam_id):
             except ValueError:
                 theory_marks, practical_marks = 0.0, 0.0
 
+            # Reject marks above the subject's allocated maximums instead of
+            # silently saving an impossible score.
+            if theory_marks < 0 or theory_marks > subject.full_marks_theory:
+                messages.error(
+                    request,
+                    f"{student.get_full_name() or student.username}: theory marks must be between 0 "
+                    f"and {subject.full_marks_theory:g}."
+                )
+                has_errors = True
+                continue
+            if practical_marks < 0 or practical_marks > subject.full_marks_practical:
+                messages.error(
+                    request,
+                    f"{student.get_full_name() or student.username}: practical marks must be between 0 "
+                    f"and {subject.full_marks_practical:g}."
+                )
+                has_errors = True
+                continue
+
             mark_obj, _ = Mark.objects.get_or_create(
                 student=student,
                 subject=subject,
                 exam=exam,
-                defaults={'theory_marks': theory_marks, 'practical_marks': practical_marks}
+                defaults={'theory_obtained': theory_marks, 'practical_obtained': practical_marks}
             )
-            mark_obj.theory_marks = theory_marks
-            mark_obj.practical_marks = practical_marks
+            mark_obj.theory_obtained = theory_marks
+            mark_obj.practical_obtained = practical_marks
             mark_obj.save()
 
-        messages.success(request, f'Marks saved successfully for {subject.name}!')
+        if has_errors:
+            messages.warning(request, 'Some marks were not saved. Please correct the highlighted entries and resubmit.')
+        else:
+            messages.success(request, f'Marks saved successfully for {subject.name}!')
         return redirect('core:dashboard')
 
     existing_marks = {
@@ -74,6 +103,10 @@ def mark_entry_view(request, classroom_id, subject_id, exam_id):
 @role_required(User.Role.TEACHER, User.Role.ADMIN)
 def attendance_entry_view(request, classroom_id):
     classroom = get_object_or_404(ClassRoom, id=classroom_id)
+
+    if not can_manage_classroom(request.user, classroom):
+        raise PermissionDenied("You are not the assigned class teacher for this classroom.")
+
     students = User.objects.filter(role=User.Role.STUDENT, classroom=classroom).order_by('username')
     today = date.today()
 
@@ -109,6 +142,10 @@ def attendance_entry_view(request, classroom_id):
 @login_required
 def report_card_view(request, student_id, exam_id):
     student = get_object_or_404(User, id=student_id, role=User.Role.STUDENT)
+
+    if not can_view_student_record(request.user, student):
+        raise PermissionDenied("You do not have permission to view this student's report card.")
+
     exam = get_object_or_404(Exam, id=exam_id)
     classroom = student.classroom
 
@@ -164,7 +201,10 @@ def report_card_view(request, student_id, exam_id):
 @login_required
 def character_certificate_view(request, student_id):
     student = get_object_or_404(User, id=student_id, role=User.Role.STUDENT)
-    
+
+    if not can_view_student_record(request.user, student):
+        raise PermissionDenied("You do not have permission to view this student's certificate.")
+
     context = {
         'student': student,
         'issue_date': date.today(),
@@ -176,6 +216,10 @@ def character_certificate_view(request, student_id):
 @role_required(User.Role.TEACHER, User.Role.ADMIN)
 def attendance_report_view(request, classroom_id):
     classroom = get_object_or_404(ClassRoom, id=classroom_id)
+
+    if not can_manage_classroom(request.user, classroom):
+        raise PermissionDenied("You are not the assigned class teacher for this classroom.")
+
     students = User.objects.filter(role=User.Role.STUDENT, classroom=classroom).order_by('username')
 
     student_summary = []
