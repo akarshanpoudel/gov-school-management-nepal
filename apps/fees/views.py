@@ -2,10 +2,18 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from apps.users.models import User
+from apps.users.decorators import role_required
 from apps.academics.models import ClassRoom, AcademicYear, Exam, Mark
 from .models import FeeStructure, Invoice, Payment
 
+# Every view below touches every student's financial or academic-standing
+# data, or can mutate it (recording payments, promoting/graduating a whole
+# class). The nav bar only links here for ADMIN users, but that's cosmetic —
+# without @role_required, any authenticated account (including a student)
+# could hit these URLs directly. Restricted to ADMIN accordingly.
+
 @login_required
+@role_required(User.Role.ADMIN)
 def fee_dashboard_view(request):
     invoices = Invoice.objects.select_related('student').order_by('-created_at')
     total_due = sum(i.remaining_balance for i in invoices)
@@ -19,6 +27,7 @@ def fee_dashboard_view(request):
     return render(request, 'fees/fee_dashboard.html', context)
 
 @login_required
+@role_required(User.Role.ADMIN)
 def record_payment_view(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
 
@@ -35,6 +44,7 @@ def record_payment_view(request, invoice_id):
     return render(request, 'fees/record_payment.html', context)
 
 @login_required
+@role_required(User.Role.ADMIN)
 def student_promotion_view(request):
     classrooms = ClassRoom.objects.all()
     academic_years = AcademicYear.objects.all()
