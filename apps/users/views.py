@@ -3,6 +3,7 @@ import io
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.utils.crypto import get_random_string
 from apps.users.models import User
 from apps.academics.models import ClassRoom
 from apps.users.decorators import role_required
@@ -22,6 +23,13 @@ def bulk_student_import_view(request):
         reader = csv.DictReader(io_string)
 
         created_count = 0
+        # Each new student gets their own random, single-use temporary
+        # password instead of a school-wide default. A shared password
+        # like "student123" means anyone who knows the pattern (a former
+        # student, a leaked handout) can log in as *any* student. The
+        # generated values are shown once below so an admin can hand them
+        # out securely; they are never stored or logged in plaintext.
+        new_credentials = []
         for row in reader:
             username = row.get('username', '').strip()
             first_name = row.get('first_name', '').strip()
@@ -41,11 +49,17 @@ def bulk_student_import_view(request):
                     }
                 )
                 if created:
-                    user.set_password('student123')
+                    temp_password = get_random_string(10)
+                    user.set_password(temp_password)
                     user.save()
                     created_count += 1
+                    new_credentials.append({'username': username, 'password': temp_password})
 
-        messages.success(request, f'Successfully imported {created_count} new students!')
-        return redirect('core:dashboard')
+        if created_count:
+            messages.success(request, f'Successfully imported {created_count} new students!')
+        else:
+            messages.warning(request, 'No new students were imported (usernames may already exist, or the file was empty).')
+
+        return render(request, 'users/bulk_import.html', {'new_credentials': new_credentials})
 
     return render(request, 'users/bulk_import.html')
