@@ -53,8 +53,6 @@ class ThrottledAuthenticationForm(AuthenticationForm):
                 cache.set(key, cache.get(key, 0) + 1, settings.LOGIN_ATTEMPT_TIMEOUT_SECONDS)
             raise
 
-        # Reached only on successful authentication - clear any prior
-        # failure count so a legitimate user isn't penalized later.
         if username:
             cache.delete(_lockout_cache_key(username))
 
