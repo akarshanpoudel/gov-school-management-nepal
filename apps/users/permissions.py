@@ -1,13 +1,5 @@
 """
 Object-level permission helpers.
-
-`role_required` (see decorators.py) only checks *which role* a user has.
-It does not check *which records* that user is allowed to touch. These
-helpers add that second, object-level layer so a TEACHER account is
-confined to the classroom(s) they are actually assigned to, and a
-STUDENT can only ever see their own records.
-
-Both the ADMIN role and Django superusers are always granted access.
 """
 
 from apps.users.models import User
@@ -35,11 +27,7 @@ def can_manage_classroom(user, classroom):
 
 
 def can_view_student_record(user, student):
-    """
-    Can this user view a given student's report card / certificate /
-    similar personal record? True for admins, the student themselves,
-    and the class_teacher of the student's current classroom.
-    """
+    
     if is_admin(user):
         return True
     if user.role == User.Role.STUDENT:
